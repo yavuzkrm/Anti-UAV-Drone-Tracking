@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class KalmanFilter:
     def __init__(self, initial_x, initial_y, initial_vx=0, initial_vy=0, ax=0, ay=0, video_width=640):
         self.x = np.array([initial_x, initial_y, initial_vx, initial_vy, ax, ay], dtype=float)
