@@ -26,7 +26,7 @@ Anti-UAV-Drone-Tracking/
 │   └── track.py              # Main tracking script with IoU evaluation
 ├── models/
 │   └── best.pt               # Trained YOLO model (download required)
-├── datasets/
+├── input/
 │   └── videos/               # Input video files
 ├── output/
 │   ├── videos/               # Tracked video output
@@ -74,7 +74,7 @@ pip install -r requirements.txt
 
 4. **Prepare input videos:**
 ```bash
-# Place video files in datasets/videos/
+# Place video files in input/videos/
 ```
 
 ## Usage
