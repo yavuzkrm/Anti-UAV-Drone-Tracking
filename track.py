@@ -2,9 +2,12 @@ import cv2
 from ultralytics import YOLO
 import numpy as np
 from kalmanfilter import KalmanFilter
+from datetime import datetime
+import json
 
 def kalman_filter_tracking():
 
+    start_time = datetime.now()
     model = YOLO("models/best.pt")
 
     cap = cv2.VideoCapture('input/videos/test_video.mp4')
@@ -21,8 +24,12 @@ def kalman_filter_tracking():
 
     track = None
     frame_count = 0
+    frame_with_detection = 0
+    frame_without_detection = 0
     success = True
     bbox_w, bbox_h = 0, 0  # Önceki frame'den w, h saklama
+    total_x_position = 0
+    total_y_position = 0
 
     while success:
         success, frame = cap.read()
@@ -38,6 +45,8 @@ def kalman_filter_tracking():
             x_norm = x_pixel / width
             y_norm = y_pixel / height
             bbox_w, bbox_h = w, h  # Yeni detection ise bbox güncelle
+            total_x_position += x_norm
+            total_y_position += y_norm
             
             if frame_count == 0:
                 track = KalmanFilter(x_norm, y_norm, video_width=width)
@@ -48,6 +57,7 @@ def kalman_filter_tracking():
             
         elif track is None:
             frame_count += 1
+            frame_without_detection += 1
             out.write(frame)
             continue
         else:
@@ -67,9 +77,31 @@ def kalman_filter_tracking():
         out.write(frame)
         frame_count += 1
 
+    frame_with_detection = frame_count - frame_without_detection
     cap.release()
     out.release()
-    print(f"Tracking tamamlandı. Output: output/videos/kalman_tracked.mp4")
+    finish_time = datetime.now()
+    processing_time_seconds = round((finish_time - start_time).total_seconds(), 2)
+    # float() fonksiyonu ile standart Python sayısına çeviriyoruz
+    average_position = [
+        round(float(total_x_position / frame_count), 2), 
+        round(float(total_y_position / frame_count), 2)
+    ]
+    data = {
+            "algorithm": "Kalman Filter",
+            "total_frames": frame_count,
+            "frames_with_detection": frame_with_detection,
+            "frames_without_detection": frame_without_detection,
+            "processing_time_seconds": processing_time_seconds,
+            "fps": fps,
+            "average_position": average_position
+        }
+    with open("output/metrics/metrics.json", "w") as file:
+        json.dump(data, file, indent=6)
+
+    print("Tracking tamamlandı.")
+    print("Output: output/videos/kalman_tracked.mp4")
+    print("Output: output/metrics/metrics.json")
 
 if __name__ == "__main__":
     kalman_filter_tracking()

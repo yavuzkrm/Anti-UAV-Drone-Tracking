@@ -69,8 +69,6 @@ class KalmanFilter:
         self.x = self.x_updated
         self.P = self.P_updated
 
-        return self.x_updated
-
     def get_position(self):
         """Güncellenmiş drone konumunu döndür"""
         return self.x_updated[:2]  # [x, y]

@@ -1,0 +1,12 @@
+{
+      "algorithm": "Kalman Filter",
+      "total_frames": 1000,
+      "frames_with_detection": 1000,
+      "frames_without_detection": 0,
+      "processing_time_seconds": 22.93,
+      "fps": 20.0,
+      "average_position": [
+            0.52,
+            0.41
+      ]
+}
