@@ -1,12 +1,18 @@
 {
-      "algorithm": "Kalman Filter",
-      "total_frames": 1000,
-      "frames_with_detection": 1000,
-      "frames_without_detection": 0,
-      "processing_time_seconds": 22.93,
-      "fps": 20.0,
-      "average_position": [
-            0.52,
-            0.41
-      ]
+    "algorithm": "Kalman Filter",
+    "total_frames": 1000,
+    "frames_with_detection": 760,
+    "frames_without_detection": 240,
+    "frames_tracked": 1000,
+    "processing_time_seconds": 25.75,
+    "fps": 20.0,
+    "processing_fps": 38.84,
+    "average_position_x": 0.5341,
+    "average_position_y": 0.4614,
+    "average_velocity_x": 0.0007,
+    "average_velocity_y": 0.0011,
+    "average_acceleration_x": 0.0019,
+    "average_acceleration_y": 0.0021,
+    "average_iou": 0.9998,
+    "iou_frames": 760
 }
