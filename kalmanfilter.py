@@ -68,7 +68,7 @@ class KalmanFilter:
         # Bir sonraki iteration için state'i güncelle
         self.x = self.x_updated
         self.P = self.P_updated
-        
+
         return self.x_updated
 
     def get_position(self):
