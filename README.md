@@ -192,10 +192,11 @@ Uses the **Anti-UAV 200** dataset:
 - Anti-UAV Dataset: [Anti-UAV Challenge](https://anti-uav.github.io/)
 
 
-## Authors
+## Author
 
-- Yavuz K. - Computer Engineering Student
-- Claude Haiku 4.5 - Code assistance
+**Yavuz Kerem**  
+Computer Engineering, Ankara University  
+Target: Defense Industry
 
 ---
 
