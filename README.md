@@ -168,4 +168,6 @@ tests/                  # unit tests
 
 ## Author
 
-**Yavuz Kerem Ataç**, Computer Engineering, Ankara University
+**Yavuz Kerem**  
+Computer Engineering, Ankara University  
+Target: Defense Industry
