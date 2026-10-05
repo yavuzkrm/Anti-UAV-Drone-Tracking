@@ -1,0 +1,57 @@
+# Written by scripts/tune.py - best parameters on the val split per detector stride
+stride_1:
+  detector_only:
+    det_thresh: 0.05
+  kalman:
+    det_thresh: 0.05
+    max_missed: 5
+    q_scale: 1000
+    gate: 100.0
+  bytetrack:
+    track_high_thresh: 0.1
+    track_low_thresh: 0.05
+    new_track_thresh: 0.2
+    match_thresh: 0.95
+    coast: 5
+stride_2:
+  detector_only:
+    det_thresh: 0.05
+  kalman:
+    det_thresh: 0.05
+    max_missed: 0
+    q_scale: 10
+    gate: 9.21
+  bytetrack:
+    track_high_thresh: 0.1
+    track_low_thresh: 0.05
+    new_track_thresh: 0.1
+    match_thresh: 0.95
+    coast: 5
+stride_3:
+  detector_only:
+    det_thresh: 0.05
+  kalman:
+    det_thresh: 0.05
+    max_missed: 0
+    q_scale: 1
+    gate: 9.21
+  bytetrack:
+    track_high_thresh: 0.1
+    track_low_thresh: 0.05
+    new_track_thresh: 0.1
+    match_thresh: 0.9
+    coast: 10
+stride_5:
+  detector_only:
+    det_thresh: 0.05
+  kalman:
+    det_thresh: 0.05
+    max_missed: 0
+    q_scale: 1
+    gate: 9.21
+  bytetrack:
+    track_high_thresh: 0.1
+    track_low_thresh: 0.05
+    new_track_thresh: 0.1
+    match_thresh: 0.95
+    coast: 5
