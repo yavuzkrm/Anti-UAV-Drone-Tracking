@@ -1,0 +1,13 @@
+# Paths are relative to the repo root unless absolute
+
+# Anti-UAV dataset root, the folder that contains train_videos/ val_videos/ test_videos/
+data_root: ../Anti-UAV-Drone-Detection/datasets/videos
+modality: infrared
+
+# Detector weights (trained in the Anti-UAV-Drone-Detection repo: python train.py infrared)
+model: ../Anti-UAV-Drone-Detection/models/best_infrared.pt
+
+# Keep every detection down to this score in the cache.
+# Low on purpose: ByteTrack's second association round needs low-score boxes.
+cache_conf: 0.05
+cache_dir: cache/detections
