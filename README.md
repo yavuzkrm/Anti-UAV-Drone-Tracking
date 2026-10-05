@@ -128,9 +128,10 @@ Per-sequence numbers: [`results/test/per_sequence.csv`](results/test/per_sequenc
 ```bash
 pip install -r requirements.txt
 
-# 1. Detector weights: download best_infrared.pt from the GitHub release,
-#    or train it in the detection repo (python train.py infrared 15)
-#    and set `model:` and `data_root:` in configs/config.yaml
+# 1. Detector weights: download best_infrared.pt from the v1.0 release
+#    https://github.com/yavuzkrm/Anti-UAV-Drone-Tracking/releases/download/v1.0/best_infrared.pt
+#    (or train it in the detection repo: python train.py infrared 15),
+#    then set `model:` and `data_root:` in configs/config.yaml
 
 python scripts/detect.py          # run YOLO once, cache boxes for val + test
 python scripts/tune.py            # grid search on val -> configs/trackers.yaml
