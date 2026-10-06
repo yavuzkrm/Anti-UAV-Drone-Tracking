@@ -172,3 +172,7 @@ tests/                  # unit tests
 **Yavuz Kerem**  
 Computer Engineering, Ankara University  
 Target: Defense Industry
+
+## License
+
+MIT - see [LICENSE](LICENSE).
