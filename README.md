@@ -121,7 +121,7 @@ Per-sequence numbers: [`results/test/per_sequence.csv`](results/test/per_sequenc
 - The detector generalizes poorly to the test recordings (71% recall ceiling), which dominates every number above. A stronger or better-adapted detector (more epochs, more diverse training recordings, fusion with the visible stream) is the biggest lever, more than the tracker.
 - Single modality (infrared) and single target. ByteTrack's multi-object strengths (identity across crossing objects) are not exercised here.
 - The optimal score thresholds sit at the cache floor (0.05), so a lower cache threshold might shift results slightly.
-- Speeds are from one laptop GPU and include Python overhead.
+- Speeds are from one laptop GPU (RTX 4060 Laptop) and include Python overhead.
 
 ## Reproduce
 
