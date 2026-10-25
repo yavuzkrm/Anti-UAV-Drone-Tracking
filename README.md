@@ -1,43 +1,43 @@
 # Anti-UAV Drone Tracking: Kalman Filter vs ByteTrack
 
-Single-drone tracking in infrared video (Anti-UAV dataset), built on a YOLOv8 detector. A hand-written Kalman Filter tracker and ByteTrack are compared against a no-tracking baseline. All three methods use the **same cached detections**, tuning is done **only on held-out validation recordings**, and results are reported on the **untouched test recordings** with the official Anti-UAV metric.
+Single-drone tracking in infrared video from the Anti-UAV dataset, on top of a YOLOv8 detector. I compare my own Kalman Filter tracker and ByteTrack against a baseline with no tracking. All three methods use the same cached detections. Parameters are tuned only on validation recordings, and the final numbers come from the test recordings using the official Anti-UAV metric.
 
 <p align="center">
   <img src="results/media/demo_stride3.gif" width="480" alt="Tracking demo: detector runs on every 3rd frame">
-  <br><em>Detector runs on every 3rd frame. White: ground truth, blue: Kalman (ours), orange: ByteTrack. Dashed = predicted without a detection. Illustrative clip, chosen to show the difference.</em>
+  <br><em>Detector runs on every 3rd frame. White: ground truth, blue: Kalman, orange: ByteTrack. Dashed boxes are predictions without a detection. I picked this clip because it shows the difference clearly.</em>
 </p>
 
-## Key findings
+## Main results
 
-1. **Tracking cannot beat the detector's recall.** On the test recordings the detector finds the drone in only **71%** of the visible frames, even at score ≥ 0.05 (98.5% on validation recordings). Every method is capped by that, and no tracker rescues sequences where the detector fails for long stretches (e.g. `1_6`, state accuracy 0.14-0.15 for all methods).
-2. **With the detector on every frame, the Kalman tracker matches the baseline** (state accuracy 0.563 vs 0.563) with slightly better localization (Precision@20px 0.727 vs 0.712), at a cost of 0.04 ms/frame. ByteTrack is lower (0.516).
-3. **When the detector skips frames to save compute, the Kalman tracker holds up best up to k = 3.** It stays ahead of "repeat the last box" at k = 2 and 3. The gap is larger on the validation recordings, where the detector is reliable: 0.714 vs 0.675 at k = 3. Those are tuning-set scores, so they are optimistic. ByteTrack drops sharply (0.516 → 0.368 at k = 3).
-4. **Why ByteTrack degrades: IoU matching breaks for small, fast targets.** The drone box is ~41 px. Between two detector runs at k = 3 the drone moves 12 px (median) and 47 px (90th percentile), so the prediction and the new detection often do not overlap at all. ByteTrack then starts a new track instead of continuing the old one (100+ track IDs per sequence for a single drone). The Kalman tracker matches on center distance scaled by its own uncertainty (Mahalanobis gating), so it does not depend on overlap.
-5. **BYTE's low-score second round barely matters here** (0.516 → 0.515 without it). The best thresholds are at the bottom of the searched range, so almost every detection is already "high score".
+1. **A tracker cannot do better than the detector's recall.** On the test recordings the detector finds the drone in only 71% of the frames where it is visible, even at score ≥ 0.05 (98.5% on val). This limits every method. When the detector fails for a long time, no tracker can fix it (for example `1_6`: state accuracy 0.14-0.15 for all methods).
+2. **When the detector runs on every frame, Kalman is equal to the baseline** (state accuracy 0.563 for both) and localizes a bit better (Precision@20px 0.727 vs 0.712). It costs 0.04 ms per frame. ByteTrack gets 0.516.
+3. **When the detector skips frames, Kalman works best up to k = 3.** At k = 2 and 3 it beats simply repeating the last box. The gap is bigger on val, where the detector is reliable: 0.714 vs 0.675 at k = 3 (these are tuning-set numbers, so they are optimistic). ByteTrack drops from 0.516 to 0.368 at k = 3.
+4. **Why ByteTrack drops: IoU matching does not work well for small, fast targets.** The drone box is about 41 px. With k = 3, the drone moves 12 px (median) and 47 px (90th percentile) between two detector runs. So the predicted box and the new detection often do not overlap at all, and ByteTrack starts a new track instead of continuing the old one (100+ track IDs per sequence for a single drone). My Kalman tracker matches by center distance scaled by its own uncertainty (Mahalanobis gating), so it does not need any overlap.
+5. **BYTE's second matching round for low-score boxes has almost no effect here** (0.516 → 0.515 without it). The best thresholds are at the bottom of the search range, so nearly every detection already counts as high score.
 
 ## Pipeline
 
 ```
 infrared video ─► YOLOv8m detector ─► cached boxes (score ≥ 0.05) ─┬─► Detector only (no tracking)
-                  (run once per video)                              ├─► Kalman tracker (ours)
+                  (run once per video)                              ├─► Kalman tracker
                                                                     └─► ByteTrack (single target)
                                                                              │
                      val recordings: grid search of tracker parameters ◄─────┤
                      test recordings: final metrics with the tuned values ◄──┘
 ```
 
-- **Data:** [Anti-UAV](https://anti-uav.github.io/) (2020), infrared stream, 640×512 at 20 fps. One drone per sequence, with per-frame `exist` flags (the drone can leave the view or be occluded).
-- **Detector:** YOLOv8m trained with the [Anti-UAV-Drone-Detection](https://github.com/yavuzkrm/Anti-UAV-Drone-Detection) repo (`python train.py infrared`, 15 epochs, val mAP50 0.989). Two whole recordings are held out of detector training. They form the **val** split here: 13 sequences.
-- **Test:** the dataset's 15 test sequences (14,348 frames), recorded separately. Never used for training or tuning.
-- **Same input for everyone:** the detector runs once per video and its boxes are cached, so differences between methods come from tracking alone.
+- **Data:** [Anti-UAV](https://anti-uav.github.io/) (2020), infrared stream, 640×512 at 20 fps. One drone per sequence, with a per-frame `exist` flag (the drone can leave the view or be hidden).
+- **Detector:** YOLOv8m trained with my [Anti-UAV-Drone-Detection](https://github.com/yavuzkrm/Anti-UAV-Drone-Detection) repo (`python train.py infrared`, 15 epochs, val mAP50 0.989). Two whole recordings were left out of detector training. They are the val split here (13 sequences).
+- **Test:** the 15 test sequences of the dataset (14,348 frames), recorded separately. Never used for training or tuning.
+- **Same input for all methods:** the detector runs once per video and the boxes are cached, so any difference between methods comes only from tracking.
 
 ## Methods
 
-| Method | Motion model | Association | Without a detection |
+| Method | Motion model | Association | When there is no detection |
 |---|---|---|---|
-| **Detector only** | none | highest-scoring box | reports nothing (or repeats the last box if the detector was skipped) |
-| **Kalman (ours)**, [`tracking/kalman_tracker.py`](tracking/kalman_tracker.py) | 6D constant acceleration on the box center | nearest detection inside a Mahalanobis gate | predicts for up to `max_missed` frames, then drops the track |
-| **ByteTrack** ([ultralytics](https://github.com/ultralytics/ultralytics) implementation), [`tracking/bytetrack.py`](tracking/bytetrack.py) | 8D constant velocity on center, aspect ratio, height | Hungarian on IoU, two rounds (high, then low score) | lost tracks kept for re-matching. Reports the lost target's prediction for `coast` frames (added for a fair comparison) |
+| Detector only | none | highest-scoring box | reports nothing (or repeats the last box if the detector was skipped) |
+| Kalman, [`tracking/kalman_tracker.py`](tracking/kalman_tracker.py) | 6D constant acceleration on the box center | nearest detection inside a Mahalanobis gate | predicts for up to `max_missed` frames, then drops the track |
+| ByteTrack ([ultralytics](https://github.com/ultralytics/ultralytics) version), [`tracking/bytetrack.py`](tracking/bytetrack.py) | 8D constant velocity on center, aspect ratio, height | Hungarian on IoU, two rounds (high score, then low score) | keeps lost tracks for re-matching. Reports the lost target's prediction for `coast` frames (I added this to make the comparison fair) |
 
 ByteTrack is a multi-object tracker. Here it reports one box per frame: the current target while it is tracked, otherwise the highest-scoring track.
 
@@ -45,57 +45,57 @@ ByteTrack is a multi-object tracker. Here it reports one box per frame: the curr
 
 | Metric | Definition |
 |---|---|
-| **State accuracy** (official Anti-UAV) | per frame: IoU with ground truth if the drone is visible. If it is absent: 1 for reporting no box, 0 otherwise. Mean over frames, then over sequences |
-| **Success AUC** | area under the success plot (fraction of visible frames with IoU > t, t ∈ [0, 1]) |
-| **Precision@20px** | fraction of visible frames with center error ≤ 20 px |
-| **False alarm rate** | fraction of absent frames where a box was still reported (only 4 test sequences contain absent frames) |
+| State accuracy (official Anti-UAV) | Per frame: IoU with ground truth if the drone is visible. If the drone is absent: 1 if no box is reported, 0 otherwise. Averaged over frames, then over sequences |
+| Success AUC | Area under the success plot (fraction of visible frames with IoU > t, for t in [0, 1]) |
+| Precision@20px | Fraction of visible frames with center error ≤ 20 px |
+| False alarm rate | Fraction of absent frames where a box was still reported (only 4 test sequences have absent frames) |
 
 ## Results (test split)
 
 | Method | State acc. ↑ | Success AUC ↑ | Precision@20px ↑ | False alarm ↓ | Tracker ms/frame |
 |---|---:|---:|---:|---:|---:|
 | Detector only | **0.563** | 0.545 | 0.712 | 0.345 | 0.005 |
-| Kalman (ours) | **0.563** | **0.554** | **0.727** | 0.501 | 0.044 |
+| Kalman | **0.563** | **0.554** | **0.727** | 0.501 | 0.044 |
 | ByteTrack | 0.516 | 0.495 | 0.667 | **0.284** | 0.162 |
 
-The detector itself takes 13.3 ms/frame (RTX 4060 Laptop GPU), so tracking overhead is negligible.
+The detector takes 13.3 ms per frame (RTX 4060 Laptop GPU), so the tracking cost is very small in comparison.
 
 ![Success and precision plots](results/plots/success_precision.png)
 
-The Kalman tracker's higher false-alarm rate comes from coasting: when the drone disappears, it keeps predicting for a few frames. Switching coasting off removes the extra false alarms but loses localization:
+Kalman has a higher false alarm rate because of coasting: when the drone disappears, it keeps predicting for a few more frames. Turning coasting off removes these false alarms but makes localization worse (see below).
 
 ### Ablations
 
-Tuned parameters with one component switched off.
+Tuned parameters with one part turned off.
 
 | Variant | State acc. | Success AUC | Precision@20px | False alarm |
 |---|---:|---:|---:|---:|
-| Kalman (ours) | 0.563 | 0.554 | 0.727 | 0.501 |
-| — constant velocity instead of acceleration | 0.563 | 0.555 | 0.728 | 0.501 |
-| — no coasting (`max_missed = 0`) | 0.563 | 0.545 | 0.714 | 0.345 |
+| Kalman | 0.563 | 0.554 | 0.727 | 0.501 |
+| - constant velocity instead of acceleration | 0.563 | 0.555 | 0.728 | 0.501 |
+| - no coasting (`max_missed = 0`) | 0.563 | 0.545 | 0.714 | 0.345 |
 | ByteTrack | 0.516 | 0.495 | 0.667 | 0.284 |
-| — BYTE off (no low-score second round) | 0.515 | 0.493 | 0.665 | 0.284 |
-| — no coasting (`coast = 0`, stock behavior) | 0.508 | 0.485 | 0.653 | 0.133 |
+| - BYTE off (no low-score second round) | 0.515 | 0.493 | 0.665 | 0.284 |
+| - no coasting (`coast = 0`, default behavior) | 0.508 | 0.485 | 0.653 | 0.133 |
 
-Constant acceleration vs constant velocity makes no measurable difference at 20 fps: frame-to-frame motion is too small for the acceleration term to matter.
+Constant acceleration and constant velocity give the same result at 20 fps. The motion between frames is too small for the acceleration term to matter.
 
 ### Frames where the detector misses
 
-1,494 visible test frames have no detection above the baseline's threshold. Here the trackers can only win by predicting through the gap:
+1,494 visible test frames have no detection above the baseline's threshold. On these frames a tracker can only help by predicting through the gap:
 
 | Method | Precision@20px | IoU > 0.5 |
 |---|---:|---:|
 | Detector only | 0.000 | 0.000 |
-| Kalman (ours) | 0.114 | 0.078 |
+| Kalman | 0.114 | 0.078 |
 | ByteTrack | 0.067 | 0.055 |
 
-Most of these gaps are long (the detector fails for many frames in a row), so a short motion prediction recovers only a small part of them.
+Most of these gaps are long (the detector misses many frames in a row), so a short motion prediction can only recover a small part of them.
 
 ### Running the detector on every k-th frame
 
-In an embedded anti-UAV system the detector is the expensive part. If YOLO runs only every k-th frame, the tracker has to fill the frames in between. Parameters are re-tuned on val for each k.
+In an embedded anti-UAV system the detector is the expensive part. If YOLO runs only on every k-th frame, the tracker has to fill in the frames between. I re-tuned the parameters on val for each k.
 
-| k | Detector ms/frame | Detector only (repeat last box) | Kalman (ours) | ByteTrack |
+| k | Detector ms/frame | Detector only (repeat last box) | Kalman | ByteTrack |
 |---:|---:|---:|---:|---:|
 | 1 | 13.3 | 0.563 | 0.563 | 0.516 |
 | 2 | 6.7 | 0.521 | **0.534** | 0.444 |
@@ -112,18 +112,18 @@ Why ByteTrack falls behind (test split, tuned parameters):
 | 3 | 12.0 | 47.0 | 166 |
 | 5 | 19.2 | 65.1 | 108 |
 
-With a ~41 px target, a 47 px jump leaves zero overlap between the predicted and the detected box, so the IoU cost cannot link them. The track count is high even at k = 1 because the tuned thresholds are low (0.1), which lets background clutter start short-lived tracks.
+The target is about 41 px, so a 47 px jump means the predicted box and the detected box do not overlap, and the IoU cost cannot connect them. The track count is high even at k = 1 because the tuned thresholds are low (0.1), so background clutter can start short tracks.
 
-Per-sequence numbers: [`results/test/per_sequence.csv`](results/test/per_sequence.csv). Full report: [`results/test/summary.md`](results/test/summary.md). Tuned parameters: [`configs/trackers.yaml`](configs/trackers.yaml). Every grid-search run: [`results/val/`](results/val).
+Per-sequence numbers: [`results/test/per_sequence.csv`](results/test/per_sequence.csv). Full report: [`results/test/summary.md`](results/test/summary.md). Tuned parameters: [`configs/trackers.yaml`](configs/trackers.yaml). All grid-search runs: [`results/val/`](results/val).
 
 ## Limitations
 
-- The detector generalizes poorly to the test recordings (71% recall ceiling), which dominates every number above. A stronger or better-adapted detector (more epochs, more diverse training recordings, fusion with the visible stream) is the biggest lever, more than the tracker.
-- Single modality (infrared) and single target. ByteTrack's multi-object strengths (identity across crossing objects) are not exercised here.
-- The optimal score thresholds sit at the cache floor (0.05), so a lower cache threshold might shift results slightly.
-- Speeds are from one laptop GPU (RTX 4060 Laptop) and include Python overhead.
+- The detector does not generalize well to the test recordings (71% recall limit), and this affects every number above. A better detector (more epochs, more varied training recordings, fusion with the visible stream) would help more than a better tracker.
+- Only one sensor (infrared) and one target. ByteTrack's strengths with multiple objects (keeping identities when objects cross) are not tested here.
+- The best score thresholds are at the cache limit (0.05), so caching with a lower threshold might change the results a little.
+- Timings are from one laptop GPU (RTX 4060 Laptop) and include Python overhead.
 
-## Reproduce
+## How to reproduce
 
 ```bash
 pip install -r requirements.txt
@@ -169,10 +169,8 @@ tests/                  # unit tests
 
 ## Author
 
-**Yavuz Kerem**  
-Computer Engineering, Ankara University  
-Target: Defense Industry
+Yavuz Kerem Ataç, Computer Engineering, Ankara University
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE)
