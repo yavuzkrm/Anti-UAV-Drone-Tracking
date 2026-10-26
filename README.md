@@ -157,6 +157,7 @@ scripts/                # detect.py, tune.py, evaluate.py, visualize.py
 configs/                # config.yaml (paths), trackers.yaml (tuned parameters)
 results/                # tables, plots, demo GIFs
 tests/                  # unit tests
+.github/workflows/      # CI: runs the unit tests on every push and PR
 ```
 
 ## References
